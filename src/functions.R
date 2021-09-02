@@ -177,7 +177,7 @@ leaflet_map <- function(bathy, pth, lines, lidar){
   m <- addProviderTiles(m, providers$Esri.NatGeoWorldMap, group = "alt")
  
 #  m <- addMarkers(m, lng = -83.58845, lat = 44.08570, label = "release")
-  m <- addCircleMarkers(m, data = lines, fillColor = c("blue", "red", "red", "red", "blue", "red", "red", "red", "red", "red"), radius = c(10,4,4,4,10,4,4,4,4,4), group = "recs", stroke = FALSE, fillOpacity = 1)
+  m <- addCircleMarkers(m, data = lines, fillColor = c("blue", "red", "red", "red", "red", "red", "red", "red", "red", "blue"), radius = c(10,4,4,4,4,4,4,4,4,10), group = "recs", stroke = FALSE, fillOpacity = 1)
   
 #  m <- addCircleMarkers(m, data = sync_100, label = ~label, fillColor = "yellow", radius = 8, group = "sentinel tag", stroke = FALSE, fillOpacity = 1)
 #  m <- addCircleMarkers(m, data = all_mob, label = ~label_short, fillColor = "orange", radius = 8, group = "mobile", stroke = FALSE, fillOpacity = 1)
