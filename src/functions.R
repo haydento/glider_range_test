@@ -1,6 +1,5 @@
 # function file contains only functions called directly to create targets. 
 
-
 #' @title prepare bathymetry layer, clean up
 #' @description bring in bathymetry geotiff, crop to study area, convert depth in feet to meters, convert CRS to 4326 (wgs84) and write out results as geotiff
 #' @param bathy1 file path to bathymetry data file (geotiff)
@@ -50,15 +49,18 @@ prep_bathy <- function(bathy1, xmin_out, xmax_out,  ymin_out, ymax_out, out_pth 
 #' tar_load(bathy)
 #' tar_load(lidar)
 #' tar_load(all_mob)
-#' raw_recs <- all_mob
+#' tar_load(parallel_lines)
+#' raw_recs <- parallel_lines
+#' lidar <- NULL
 #' depth_extract(all_mob, bathy, lidar)
+#' depth_extract(parallel_lines, bathy)
 
-depth_extract <- function(raw_recs, bathy, lidar){
+depth_extract <- function(raw_recs, bathy, lidar= NULL){
   
   if(is.character(raw_recs)){
-  recs <- sf::st_read(raw_recs, quiet = TRUE)
-  recs <- sf::st_transform(recs, crs = 4326)
-  recs <- terra::vect(recs)
+    recs <- sf::st_read(raw_recs, quiet = TRUE)
+    recs <- sf::st_transform(recs, crs = 4326)
+    recs <- terra::vect(recs)
   }
 
   if(!is.character(raw_recs)){
@@ -67,34 +69,48 @@ depth_extract <- function(raw_recs, bathy, lidar){
   }
   
   bath <- terra::rast(bathy)
-  lid <- terra::rast(lidar)
-
+  
   # compile all the points with lat/lon
   out <-as.data.table(cbind(as.data.frame(terra::geom(recs)), terra::as.data.frame(recs)))
   out_bathy <- data.table::as.data.table(terra::extract(bath, recs, xy = FALSE))
-  out_lidar <- data.table::as.data.table(terra::extract(lid, recs, xy = FALSE))
   out[out_bathy, depth_ft_bathy := huron_lld, on = .(geom = ID)]
-  out[out_lidar, depth_ft_lidar := Job627873_001_001, on = .(geom = ID)]
+
+  if(!is.null(lidar)){
+    lid <- terra::rast(lidar)
+    out_lidar <- data.table::as.data.table(terra::extract(lid, recs, xy = FALSE))
+    out[out_lidar, depth_ft_lidar := Job627873_001_001, on = .(geom = ID)]
+  }
 
 
   if(is.character(raw_recs)){
-  out <-  out[, c("geom", "x", "y", "glat_array", "station_no", "depth_ft_bathy", "depth_ft_lidar")]
-  setnames(out, c("geom", "x", "y", "glat_array"), c("id", "lon", "lat", "glatos_array"))
+    out <-  out[, c("geom", "x", "y", "glat_array", "station_no", "depth_ft_bathy", "depth_ft_lidar")]
+    setnames(out, c("geom", "x", "y", "glat_array"), c("id", "lon", "lat", "glatos_array"))
   }
 
-  if(!is.character(raw_recs)){
+  if(!is.character(raw_recs) & !is.null(lidar)){
     out <- out[, c("geom", "x", "y", "glatos_array", "station_no", "depth_ft_bathy", "depth_ft_lidar")]
     setnames(out, c("geom", "x", "y"), c("id", "lon", "lat"))
   }
-  
+
+  if(!is.character(raw_recs) & is.null(lidar)){
+    out <- out[, c("geom", "x", "y", "array", "station", "depth_ft_bathy")]
+    setnames(out, c("geom", "x", "y", "array", "station", "depth_ft_bathy"), c("id", "lon", "lat", "glatos_array", "site", "depth_ft"))
+
+    substrRight <- function(x, n){
+      substr(x, nchar(x)-n+1, nchar(x))
+    }
+
+    out[, station_no := substrRight(site, 3)]
+  }
   
   # create label info for leaflet
-  out[, label := sprintf("site id %s-%s\n water depth %2.0f feet (LIDAR)\n water depth %2.0f feet (DEM)\n", glatos_array, station_no, depth_ft_lidar, depth_ft_bathy)]
-  out[, label_short := depth_ft_bathy]
-  out[!is.nan(depth_ft_lidar), label_short := depth_ft_lidar]
-  out[, label_short := sprintf("%s-%s, %2.0f ft", glatos_array, station_no, label_short)]
-
-  return(out)
+  if(!is.character(raw_recs) & !is.null(lidar)){
+    out[, label := sprintf("site id %s-%s\n water depth %2.0f feet (LIDAR)\n water depth %2.0f feet (DEM)\n", glatos_array, station_no, depth_ft_lidar, depth_ft_bathy)]
+    out[, label_short := depth_ft_bathy]
+    out[!is.nan(depth_ft_lidar), label_short := depth_ft_lidar]
+    out[, label_short := sprintf("%s-%s, %2.0f ft", glatos_array, station_no, label_short)]
+  }
+  return(out[])
 }
 
 
@@ -177,7 +193,7 @@ leaflet_map <- function(bathy, pth, lines, lidar){
   m <- addProviderTiles(m, providers$Esri.NatGeoWorldMap, group = "alt")
  
 #  m <- addMarkers(m, lng = -83.58845, lat = 44.08570, label = "release")
-  m <- addCircleMarkers(m, data = lines, fillColor = c("blue", "red", "red", "red", "red", "red", "red", "red", "red", "blue"), radius = c(10,4,4,4,4,4,4,4,4,10), group = "recs", stroke = FALSE, fillOpacity = 1)
+  m <- addCircleMarkers(m, data = lines, label = ~station, fillColor = c("blue", "red", "red", "red", "red", "red", "red", "red", "red", "blue"), radius = c(10,4,4,4,4,4,4,4,4,10), group = "recs", stroke = FALSE, fillOpacity = 1)
   
 #  m <- addCircleMarkers(m, data = sync_100, label = ~label, fillColor = "yellow", radius = 8, group = "sentinel tag", stroke = FALSE, fillOpacity = 1)
 #  m <- addCircleMarkers(m, data = all_mob, label = ~label_short, fillColor = "orange", radius = 8, group = "mobile", stroke = FALSE, fillOpacity = 1)
@@ -410,6 +426,24 @@ make_gear_gpx <- function(sentinal, receivers, pth = "output/Sag_bay_cisco_deplo
 }
 
 
+#' @title make gpx file
+#' @description writes basic gpx file using sf
+#' @param x object (data.table) that contains lat, lon, site location
+#' @param pth output path to gpx file
+#' @param idcol identifies id column (site location) to be used for "name" column in gpx file
+#'
+#' @examples
+#' tar_load(recs)
+#' make_gpx(recs, pth = "output/glider_recs.gpx", idcol = "site")
+#' 
+make_gpx <- function(x, pth = "output/glider_rec.gpx", idcol = "site"){
+  setnames(x, idcol, "name")
+  x <- sf::st_as_sf(x, coords = c("lon", "lat"), crs = 4326)
+  x <- x[, c("name")]
+  sf::st_write(x, pth, driver = "GPX", append = FALSE)
+  return(pth)
+}
+
 #' @title make mobile tracking gpx file
 #' @description creates file for upload on sounder using common GPX file format for mobile tracking.
 #' @param x data.table containing coordinates and ID for mobile tracking listening stations
@@ -426,8 +460,6 @@ make_mobile_gpx <- function(x, pth = "output/sag_bay_cisco_mobile.gpx"){
   return(pth)
 }
 
-
-  
 ######################
 #' @examples
 #' start_lat = 45.537
@@ -459,6 +491,11 @@ find_parallel_lines <- function(start_lat, start_lon, offset, line_direction = "
 
   # combine
   out <- rbind(line1, line2)
+  out[c(1,(nrow(out))), c("array", "station") := list(c("MBU", "MBU"), c("001", "002"))]
+  out[!c(1,(nrow(out))), c("array", "station") := list(c(rep("VPS",8)), c("001", "002", "003", "004", "005", "006", "007", "008"))]
+  out[, station := paste(array, station, sep = "-")]
+
+  
 return(out)
   
 }
