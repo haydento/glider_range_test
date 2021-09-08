@@ -101,15 +101,17 @@ depth_extract <- function(raw_recs, bathy, lidar= NULL){
     }
 
     out[, station_no := substrRight(site, 3)]
+    out[, site_label := sprintf("%s, %2.0f feet", site, depth_ft)]  
   }
   
   # create label info for leaflet
   if(!is.character(raw_recs) & !is.null(lidar)){
-    out[, label := sprintf("site id %s-%s\n water depth %2.0f feet (LIDAR)\n water depth %2.0f feet (DEM)\n", glatos_array, station_no, depth_ft_lidar, depth_ft_bathy)]
+    out[, site_label := sprintf("site id %s-%s\n water depth %2.0f feet (LIDAR)\n water depth %2.0f feet (DEM)\n", glatos_array, station_no, depth_ft_lidar, depth_ft_bathy)]
     out[, label_short := depth_ft_bathy]
     out[!is.nan(depth_ft_lidar), label_short := depth_ft_lidar]
     out[, label_short := sprintf("%s-%s, %2.0f ft", glatos_array, station_no, label_short)]
   }
+
   return(out[])
 }
 
@@ -193,7 +195,7 @@ leaflet_map <- function(bathy, pth, lines, lidar){
   m <- addProviderTiles(m, providers$Esri.NatGeoWorldMap, group = "alt")
  
 #  m <- addMarkers(m, lng = -83.58845, lat = 44.08570, label = "release")
-  m <- addCircleMarkers(m, data = lines, label = ~station, fillColor = c("blue", "red", "red", "red", "red", "red", "red", "red", "red", "blue"), radius = c(10,4,4,4,4,4,4,4,4,10), group = "recs", stroke = FALSE, fillOpacity = 1)
+  m <- addCircleMarkers(m, data = lines, label = ~site_label, color = c("blue", "red", "red", "red", "red", "red", "red", "red", "red", "blue"), radius = c(10,4,4,4,4,4,4,4,4,10), group = "recs", stroke = FALSE, fillOpacity = 1)
   
 #  m <- addCircleMarkers(m, data = sync_100, label = ~label, fillColor = "yellow", radius = 8, group = "sentinel tag", stroke = FALSE, fillOpacity = 1)
 #  m <- addCircleMarkers(m, data = all_mob, label = ~label_short, fillColor = "orange", radius = 8, group = "mobile", stroke = FALSE, fillOpacity = 1)

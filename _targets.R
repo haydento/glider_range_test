@@ -22,7 +22,7 @@ list(
 
   tar_target(
    leaflet,
-   leaflet_map(bathy, pth = "docs/index.html", lines = parallel_lines), #create leaflet map appropriate for webpage.  Also specify bridle length classes.
+   leaflet_map(bathy, pth = "docs/index.html", lines = recs), #create leaflet map appropriate for webpage.  Also specify bridle length classes.
    format = "file"
  ),
 
