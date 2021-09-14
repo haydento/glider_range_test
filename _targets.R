@@ -26,12 +26,18 @@ list(
    format = "file"
  ),
 
+ ## tar_target(
+ ##   parallel_lines,
+ ##   find_parallel_lines(start_lat = 45.537, start_lon = -83.999, offset = 500, line_direction = "E", parallel_line_direction = "N", inter_pt_dist = 500, line_dist = 2000),
+ ##   format = "fst_dt"
+ ## ),
+
  tar_target(
    parallel_lines,
-   find_parallel_lines(start_lat = 45.537, start_lon = -83.999, offset = 500, line_direction = "N", parallel_line_direction = "E", inter_pt_dist = 500, line_dist = 2000),
+   find_parallel_lines_split_start(start_lat = 45.5361667, start_lon = -84.00, split_dist = 250, bearing = 360-59.33614, end_lat = 45.545333, end_lon = -84.022, inter_pt_dist = 500),
    format = "fst_dt"
  ),
-
+ 
  tar_target(
    extract_depth,
    depth_extract(parallel_lines, bathy, lidar = NULL),

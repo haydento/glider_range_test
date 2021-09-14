@@ -171,6 +171,7 @@ find_sent <- function(rec_depth, glatos_array = c("AC4", "AC3", "AC2"), start_st
 # create leaflet map
 leaflet_map <- function(bathy, pth, lines, lidar){
 
+  glider_pth <- data.frame(lat = c(45.5361667, 45.545333, 45.597333), lon = c(-84.000, -84.022, -84.1108333))
   lines <- sf::st_as_sf(lines, crs = 4326, agr = "constant", coords = c("lon", "lat"))
   bath <- terra::rast(bathy)
 #  bath <- terra::aggregate(bath, fact = 4)
@@ -193,9 +194,10 @@ leaflet_map <- function(bathy, pth, lines, lidar){
   m <- addTiles(m, urlTemplate = "http://tileservice.charts.noaa.gov/tiles/50000_1/{z}/{x}/{y}.png", group = "nav chart")
   m <- addProviderTiles(m, providers$Esri.WorldImagery, group = "satellite")
   m <- addProviderTiles(m, providers$Esri.NatGeoWorldMap, group = "alt")
- 
+  m <- addPolylines(map = m, data = glider_pth, lng = ~lon, lat = ~lat, color = "green")
 #  m <- addMarkers(m, lng = -83.58845, lat = 44.08570, label = "release")
-  m <- addCircleMarkers(m, data = lines, label = ~site_label, color = c("blue", "red", "red", "red", "red", "red", "red", "red", "red", "blue"), radius = c(10,4,4,4,4,4,4,4,4,10), group = "recs", stroke = FALSE, fillOpacity = 1)
+  m <- addCircleMarkers(m, data = lines, label = ~site_label, color = c("red", "red", "red", "red", "red", "red", "blue", "red", "red", "blue"), radius = c(4,4,4,4,4,4,10,4,4,10), group = "recs", stroke = FALSE, fillOpacity = 1)
+                    
   
 #  m <- addCircleMarkers(m, data = sync_100, label = ~label, fillColor = "yellow", radius = 8, group = "sentinel tag", stroke = FALSE, fillOpacity = 1)
 #  m <- addCircleMarkers(m, data = all_mob, label = ~label_short, fillColor = "orange", radius = 8, group = "mobile", stroke = FALSE, fillOpacity = 1)
@@ -240,9 +242,6 @@ glider_zone <- function(shoreline, in_dist, out_dist, release_lon, release_lat){
   
   return(pth)
 }
-
-
-####################################
 
 
 #' @title randomly select listening stations for mobile tracking
@@ -330,7 +329,6 @@ mobile_station <- function(shore, recs){
 }
   
 
-#############################3
 #' @title calculate geographic coordinates for receivers in concentric circles.
 #' @description User provides distance of arc from central point (m), inter-receiver distance (m), and minimum distance distance from endpoints to shoreline and function returns an equally spaced series of points on concentric circles.  End points exactly argument values but inter-receiver spacing is not exactly equal to inter-receiver distance argument.  This is because function finds equally spaced intervals and depending on the distance of inter-receiver circle, inter-receiver distance may vary a bit.
 #' @param shoreline path to shoreline (polygon, geopackage file format)
@@ -463,6 +461,16 @@ make_mobile_gpx <- function(x, pth = "output/sag_bay_cisco_mobile.gpx"){
 }
 
 ######################
+#' @title find coordinates for parallel lines of receivers
+#' @description User provides starting point and then parallel lines are calculated for lines of multiple receivers
+#' @param start_lat starting lat
+#' @param start_lon starting lon
+#' @param offset distance in meters between parallel lines
+#' @param line_direction character value specifying spatial orientation of lines
+#' @param parallel_line_direction character value specifying location of parallel line in relation to first line
+#' @param inter_pt_dist distance between receivers within a line
+#' @param line_dist total distance of line
+
 #' @examples
 #' start_lat = 45.537
 #' start_lon = -83.999
@@ -502,6 +510,92 @@ return(out)
   
 }
  
+######################
+#' @title find coordinates for parallel lines of receivers
+#' @description User provides starting point and then parallel lines are calculated equidistant on both sides of start point
+#' @param start_lat starting lat
+#' @param start_lon starting lon
+#' @param offset distance in meters between parallel lines
+#' @param line_direction character value specifying spatial orientation of lines
+#' @param parallel_line_direction character value specifying location of parallel line in relation to first line
+#' @param inter_pt_dist distance between receivers within a line
+#' @param line_dist total distance of line
+
+#' @examples
+#' start_lat = 45.5361667
+#' start_lon = -84.00
+#' split_dist = 250
+#' bearing = 360-59.33614
+#' end_lat = 45.545333
+#' end_lon = -84.022
+#' inter_pt_dist = 500
+#'
+#' find_parallel_lines_split_start(start_lat=start_lat, start_lon=start_lon, end_lon=end_lon, end_lat=end_lat, bearing =bearing, split_dist = split_dist,  inter_pt_dist=inter_pt_dist)
+
+find_parallel_lines_split_start <- function(start_lat, start_lon, end_lon, end_lat, bearing, split_dist, inter_pt_dist = 500){
+  
+  # find coords of points equidistant from transect start and end points, positioned parallel to each other at the appropriate distance and bearing
+  end1 <- data.table(pt_id = c(1,2), geosphere::destPoint(p = c(start_lon, start_lat), c((bearing + 90)%%360, (bearing-90)%%360), d = split_dist))
+  end2 <- data.table(pt_id = c(1,2), geosphere::destPoint(p = c(end_lon, end_lat), c((bearing+90)%%360, (bearing-90)%%360), d = split_dist))    
+
+  d1 <- distm(as.matrix(end1[1, 2:3]), as.matrix(end2[1, 2:3]))
+  d2 <- distm(as.matrix(end1[2,2:3]), as.matrix(end2[2,2:3]))
+  
+  
+  dist_ends_side1 <- c(0, d1)
+  dist_ends_side2 <- c(0, d2)
+  dist_seq_side1 <- seq(0, 2001, by = inter_pt_dist)
+
+  lon_int_side1 <- approx(x = dist_ends_side1, y = c(end1[pt_id == 1,"lon"], end2[pt_id == 1, "lon"]), xout = c(dist_seq_side1))$y
+  lat_int_side1 <- approx(x = dist_ends_side1, y = c(end1[pt_id == 1,"lat"], end2[pt_id == 1, "lat"]), xout = c(dist_seq_side1))$y
+
+  lon_int_side2 <- approx(x = dist_ends_side2, y = c(end1[pt_id == 2,"lon"], end2[pt_id == 2, "lon"]), xout = c(dist_seq_side1))$y
+  lat_int_side2 <- approx(x = dist_ends_side2, y = c(end1[pt_id == 2,"lat"], end2[pt_id == 2, "lat"]), xout = c(dist_seq_side1))$y
+  
+  # combine
+
+  s1 <- as.data.table(cbind(lon = lon_int_side1, lat = lat_int_side1))
+  s2 <- as.data.table(cbind(lon = lon_int_side2, lat = lat_int_side2))
+  s1 <- s1[!c(1,5),]
+  s2 <- s2[!c(1,5),]
+  s_all <- rbind(s1, s2)
+  s_all[, c("array", "station") := list(c(rep("VPS",6)), c("002", "003", "004", "005", "006", "007"))]
+  
+
+  ends <- as.data.table(rbind(end1[,2:3], end2[,2:3]))
+  ends[c(1,4), c("array", "station") := list(c("MBU", "MBU"), c("001", "002"))]
+  ends[c(2,3), c("array", "station") := list(c("VPS", "VPS"), c("001", "008"))] 
+  out <- rbind(s_all, ends)
+  out[, station := paste(array, station, sep = "-")]
+  
+  return(out[])
+  
+}
+
+  
+
+  
+  
+  
+## foo <- rbind(end1, end2)#, lat_int_side1)
+## side2 <- cbind(lon_int_side2, lat_int_side2)
+## side1 <- cbind(lon_int_side1, lat_int_side1)
+
+
+##   plot(foo[,c("lon", "lat")])
+## tst <-  rbind(c(-84.000, 45.5361667), c(-84.022, 45.545333))
+## lines(tst)  
+##  points(side1, pch = 16, col = "red")
+##  points(side2, pch = 16, col = "blue")
+
+
+  
+## plot(out)
+
+## points(foo, pch =16, col = "red")  
+## points(bar, pch = 16, col = "blue")
+  
+
 
   
  
