@@ -13,7 +13,7 @@
 #' prep_bathy("data/LH_bathy/huron_lld.tif", xmin_out = -84.06762, xmax_out = -82.60408, ymin_out = 43.41871, ymax_out = 44.96670)
 
 # prepare bathymetry layer
-prep_bathy <- function(bathy1, xmin_out, xmax_out,  ymin_out, ymax_out, out_pth = "~/Documents/glider_range_test_2021/output/bathy.tif"){
+prep_bathy <- function(bathy1, xmin_out, xmax_out,  ymin_out, ymax_out, out_pth = "~/Documents/glider_range_test_receiver_planning_2021/output/bathy.tif"){
   bathy1 <- terra::rast(bathy1)
   e <- terra::ext(c(xmin_out, xmax_out, ymin_out, ymax_out ) )
   bathy1 <- terra::crop(bathy1, e)
@@ -169,9 +169,9 @@ find_sent <- function(rec_depth, glatos_array = c("AC4", "AC3", "AC2"), start_st
 #' leaflet_map(bathy, lidar, sentinal, rec_depth, glid_area = glider, mobile = mobile_listen)
 
 # create leaflet map
-leaflet_map <- function(bathy, pth, lines, lidar){
+leaflet_map <- function(bathy, pth, lines, lidar, glider_lat = c(45.5361667, 45.545333, 45.597333), glider_lon = c(-84.000, -84.022, -84.110833) ){
 
-  glider_pth <- data.frame(lat = c(45.5361667, 45.545333, 45.597333), lon = c(-84.000, -84.022, -84.1108333))
+  glider_pth <- data.frame(lat = glider_lat, lon = glider_lon)
   lines <- sf::st_as_sf(lines, crs = 4326, agr = "constant", coords = c("lon", "lat"))
   bath <- terra::rast(bathy)
 #  bath <- terra::aggregate(bath, fact = 4)
