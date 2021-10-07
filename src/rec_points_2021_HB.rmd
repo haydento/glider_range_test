@@ -1,0 +1,47 @@
+---
+title: "glider range test"
+date: "as of `r format(Sys.time(), '%m/%d/%Y')` "
+output:
+  html_document
+---
+
+<style type="text/css">
+
+h1.title {
+	font-size: 34px;
+	text-align: center;
+	}
+	
+h4.date {
+   font-size: 18px;
+   text-align: center;
+   }
+   	
+</style>
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+
+tar_load(recs_HB)
+
+#print(parallel_lines)
+
+## sentinal_depth <- formatter(sentinal_depth)
+## rec_depth <- formatter(rec_depth)
+## set(rec_depth, j = "inst", value = "VR2W-180")
+## set(sentinal_depth, j = "site", value = paste("snt", sentinal_depth$id, sep = "-"))
+## set(sentinal_depth, j = "inst", value = "sentinal tag")
+## out <- rbind(rec_depth, sentinal_depth)
+
+# add column to identify bridle length and type
+## out[depth_ft < 15, mooring := "tube/rebar"] # less than 15', tuber
+## out[depth_ft >=15, mooring := "6' bridle"] # greater than or equal to 15', 6' bridle
+
+coords_table(out_tbl = recs_HB)
+
+# see links below for info about customizing output.
+# https://babichmorrowc.github.io/post/changing-fonts-in-rmarkdown-pdfs/
+# used flextable to style table
+
+```
+
+

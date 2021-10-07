@@ -47,10 +47,8 @@ prep_bathy <- function(bathy1, xmin_out, xmax_out,  ymin_out, ymax_out, out_pth 
 #' depth_extract(all_rings, bathy, lidar)#' 
 #'
 #' tar_load(bathy)
-#' tar_load(lidar)
-#' tar_load(all_mob)
-#' tar_load(parallel_lines)
-#' raw_recs <- parallel_lines
+#' tar_load(parallel_lines_SB)
+#' raw_recs <- parallel_lines_SB
 #' lidar <- NULL
 #' depth_extract(all_mob, bathy, lidar)
 #' depth_extract(parallel_lines, bathy)
@@ -512,7 +510,7 @@ return(out)
  
 ######################
 #' @title find coordinates for parallel lines of receivers
-#' @description User provides starting point and then parallel lines are calculated equidistant on both sides of start point
+#' @description User provides starting point and then parallel lines are calculated equidistant on both sides of start point.  Used geosphere::bearing to figure out bearing of line input to "bearing" argument in this function.
 #' @param start_lat starting lat
 #' @param start_lon starting lon
 #' @param offset distance in meters between parallel lines

@@ -21,6 +21,12 @@ list(
   ),
 
   tar_target(
+    bathy_SB,
+    prep_bathy(raw_bathy, xmin_out = -83.61763, xmax_out = -83.45284, ymin_out = 44.04096, ymax_out = 44.18836, out_pth = "~/Documents/glider_range_test_receiver_planning_2021/output/bathy_SB.tif"),
+    format = "file"
+  ),
+    
+  tar_target(
    leaflet_HB,
    leaflet_map(bathy, pth = "docs/index_HB.html", lines = recs_HB), #create leaflet map appropriate for webpage.  Also specify bridle length classes.
    format = "file"
@@ -28,7 +34,7 @@ list(
 
   tar_target(
    leaflet_SB,
-   leaflet_map(bathy, pth = "docs/index_SB.html", lines = recs_SB, glider_lat = c(44.08313, 44.16488), glider_lon = c(-83.52757, -83.48537)), #create leaflet map appropriate for webpage.  Also specify bridle length classes.
+   leaflet_map(bathy_SB, pth = "docs/index.html", lines = recs_SB, glider_lat = c(44.08313, 44.16488), glider_lon = c(-83.52757, -83.48537)), #create leaflet map appropriate for webpage.  Also specify bridle length classes.
    format = "file"
  ),
 
@@ -59,7 +65,7 @@ list(
 
  tar_target(
    extract_depth_SB,
-   depth_extract(parallel_lines_SB, bathy, lidar = NULL),
+   depth_extract(parallel_lines_SB, bathy_SB, lidar = NULL),
    ),
 
  
