@@ -50,13 +50,21 @@ list(
    format = "fst_dt"
  ),
 
+ # standard array
  tar_target(
    parallel_lines_SB,
    find_parallel_lines_split_start(start_lat = 44.1482, start_lon = -83.4937, split_dist = 250, end_lat = 44.16488, end_lon = -83.48537, inter_pt_dist = 500, bearing = 19.77225),
    format = "fst_dt"
  ),
- 
- 
+
+
+# "slanted" array through end primary range testing array
+## tar_target(
+##    parallel_lines_SB,
+##    find_parallel_lines_split_start(start_lat = 44.14896, start_lon = -83.49664, split_dist = 250, end_lat = 44.16412, end_lon = -83.48243, inter_pt_dist = 500, bearing = 19.77225),
+##    format = "fst_dt"
+##  ),
+  
  tar_target(
    extract_depth_HB,
    depth_extract(parallel_lines_HB, bathy, lidar = NULL),
